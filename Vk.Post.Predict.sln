@@ -2,6 +2,11 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vk.Post.Predict", "Vk.Post.Predict\Vk.Post.Predict.csproj", "{8D697992-934E-4AA9-A802-7EF6EE3CFA25}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionItems", "SolutionItems", "{800C3DC2-4BF0-4586-8CC3-F37374D6477D}"
+ProjectSection(SolutionItems) = preProject
+	heroku.yml = heroku.yml
+EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

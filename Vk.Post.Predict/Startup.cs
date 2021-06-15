@@ -6,12 +6,14 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.ML;
 using Microsoft.OpenApi.Models;
+using Vk.Post.Predict.Entities;
 
 namespace Vk.Post.Predict
 {
@@ -29,7 +31,10 @@ namespace Vk.Post.Predict
         {
             services.AddControllers();
             services.AddPredictionEnginePool<VkMessageML, VkMessagePredict>()
-                .FromUri("https://github.com/Woodhds/Vk.Post.Model/raw/master/Model.zip", TimeSpan.FromDays(7));
+                .FromUri("https://github.com/Woodhds/Vk.Post.Model/raw/master/Model.zip", TimeSpan.FromDays(1));
+
+            services.AddDbContextFactory<DataContext>(
+                x => x.UseNpgsql(Configuration.GetConnectionString("DataContext")));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

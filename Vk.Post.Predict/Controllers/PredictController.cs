@@ -1,7 +1,10 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.ML;
+using Vk.Post.Predict.Entities;
 
 namespace Vk.Post.Predict.Controllers
 {
@@ -32,5 +35,14 @@ namespace Vk.Post.Predict.Controllers
                 })?.Category
             });
         }
+
+        /*
+        [HttpPut]
+        public async Task<IActionResult> Create([FromBody] Message message)
+        {
+            await _dataContext.Messages.AddAsync(message);
+            await _dataContext.SaveChangesAsync();
+            return Ok();
+        }*/
     }
 }

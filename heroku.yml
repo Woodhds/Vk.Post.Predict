@@ -1,0 +1,3 @@
+build:
+  docker:
+    web: ./Vk.Post.Predict/Dockerfile

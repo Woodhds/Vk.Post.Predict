@@ -15,4 +15,4 @@ RUN dotnet publish "Vk.Post.Predict.csproj" -c Release -r linux-musl-x64 -o /app
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-CMD ASPNETCORE_URLS=http://*:$PORT ConnectionStrings__DataContext:$DATABASE_URL ./Vk.Post.Predict
+CMD ASPNETCORE_URLS=http://*:$PORT ./Vk.Post.Predict

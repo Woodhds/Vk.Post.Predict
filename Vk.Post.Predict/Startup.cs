@@ -14,6 +14,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.ML;
 using Microsoft.OpenApi.Models;
 using Vk.Post.Predict.Entities;
+using IHostEnvironment = Microsoft.ML.Runtime.IHostEnvironment;
 
 namespace Vk.Post.Predict
 {
@@ -30,11 +31,13 @@ namespace Vk.Post.Predict
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
+            services.AddTransient<IMigrateDatabase, MigrateDatabase>();
             services.AddPredictionEnginePool<VkMessageML, VkMessagePredict>()
                 .FromUri("https://github.com/Woodhds/Vk.Post.Model/raw/master/Model.zip", TimeSpan.FromDays(1));
 
             services.AddDbContextFactory<DataContext>(
-                x => x.UseNpgsql(Configuration.GetConnectionString("DataContext")));
+                x => x.UseNpgsql(Environment.GetEnvironmentVariable("DATABASE_URL") ??
+                                 Configuration.GetConnectionString("DataContext")));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -50,6 +53,8 @@ namespace Vk.Post.Predict
             app.UseRouting();
 
             app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
+
+            app.ApplicationServices.GetRequiredService<IMigrateDatabase>().Migrate();
         }
     }
 }

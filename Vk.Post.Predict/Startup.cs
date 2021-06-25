@@ -34,10 +34,22 @@ namespace Vk.Post.Predict
             services.AddTransient<IMigrateDatabase, MigrateDatabase>();
             services.AddPredictionEnginePool<VkMessageML, VkMessagePredict>()
                 .FromUri("https://github.com/Woodhds/Vk.Post.Model/raw/master/Model.zip", TimeSpan.FromDays(1));
+            
+            var connUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+            // Parse connection URL to connection string for Npgsql
+            connUrl = connUrl.Replace("postgres://", string.Empty);
+            var pgUserPass = connUrl.Split("@")[0];
+            var pgHostPortDb = connUrl.Split("@")[1];
+            var pgHostPort = pgHostPortDb.Split("/")[0];
+            var pgDb = pgHostPortDb.Split("/")[1];
+            var pgUser = pgUserPass.Split(":")[0];
+            var pgPass = pgUserPass.Split(":")[1];
+            var pgHost = pgHostPort.Split(":")[0];
+            var pgPort = pgHostPort.Split(":")[1];
+            var connStr = $"Server={pgHost};Port={pgPort};User Id={pgUser};Password={pgPass};Database={pgDb};SSL=True;SslMode=Require;Trust Server Certificate=true";
 
             services.AddDbContextFactory<DataContext>(
-                x => x.UseNpgsql(Environment.GetEnvironmentVariable("DATABASE_URL") ??
-                                 Configuration.GetConnectionString("DataContext")));
+                x => x.UseNpgsql(connStr));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

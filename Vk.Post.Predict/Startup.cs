@@ -36,8 +36,7 @@ namespace Vk.Post.Predict
                 .FromUri("https://github.com/Woodhds/Vk.Post.Model/raw/master/Model.zip", TimeSpan.FromDays(1));
 
             services.AddDbContextFactory<DataContext>(
-                x => x.UseNpgsql(Environment.GetEnvironmentVariable("DATABASE_URL") ??
-                                 Configuration.GetConnectionString("DataContext")));
+                x => x.UseNpgsql(Configuration.GetConnectionString("DataContext")));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -52,7 +51,7 @@ namespace Vk.Post.Predict
 
             app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
 
-            //app.ApplicationServices.GetRequiredService<IMigrateDatabase>().Migrate();
+            app.ApplicationServices.GetRequiredService<IMigrateDatabase>().Migrate();
         }
     }
 }

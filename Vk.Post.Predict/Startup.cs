@@ -54,7 +54,7 @@ namespace Vk.Post.Predict
 
             app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
 
-            app.ApplicationServices.GetRequiredService<IMigrateDatabase>().Migrate();
+            //app.ApplicationServices.GetRequiredService<IMigrateDatabase>().Migrate();
         }
     }
 }

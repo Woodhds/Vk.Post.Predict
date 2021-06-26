@@ -6,7 +6,7 @@ namespace Vk.Post.Predict.Entities
     {
         public DbSet<Message> Messages { get; set; }
 
-        public DataContext(DbContextOptions options) : base(options)
+        public DataContext(DbContextOptions<DataContext> options) : base(options)
         {
         }
 

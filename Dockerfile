@@ -10,9 +10,9 @@ WORKDIR "/src/Vk.Post.Predict"
 RUN dotnet build "Vk.Post.Predict.csproj" -c Release -o /app/build
 
 FROM build AS publish
-RUN dotnet publish "Vk.Post.Predict.csproj" -c Release -r linux-musl-x64 -o /app/publish
+RUN dotnet publish "Vk.Post.Predict.csproj" -c Release -r alpine-x64 -o /app/publish /p:PublishSingleFile=true
 
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-CMD ASPNETCORE_URLS=http://*:$PORT ./Vk.Post.Predict
+CMD ASPNETCORE_URLS=https://*:$PORT ./Vk.Post.Predict

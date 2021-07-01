@@ -1,20 +1,12 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.ML;
-using Microsoft.OpenApi.Models;
 using Vk.Post.Predict.Entities;
-using IHostEnvironment = Microsoft.ML.Runtime.IHostEnvironment;
 
 namespace Vk.Post.Predict
 {
@@ -43,6 +35,7 @@ namespace Vk.Post.Predict
                 x => x.UseNpgsql(string.IsNullOrEmpty(connUrl)
                     ? Configuration.GetConnectionString("DataContext")
                     : GetConnectionString(connUrl)));
+            services.AddGrpc();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -55,7 +48,11 @@ namespace Vk.Post.Predict
 
             app.UseRouting();
 
-            app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllers();
+                endpoints.MapGrpcService<MessageService>();
+            });
 
             app.ApplicationServices.GetRequiredService<IMigrateDatabase>().Migrate();
         }

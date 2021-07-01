@@ -41,15 +41,6 @@ namespace Vk.Post.Predict.Controllers
             });
         }
 
-
-        [HttpPut]
-        public async Task<IActionResult> Create([FromBody] Message message)
-        {
-            await _dataContext.Messages.AddAsync(message);
-            await _dataContext.SaveChangesAsync();
-            return Ok();
-        }
-
         [HttpGet]
         public async Task<IActionResult> Get()
         {

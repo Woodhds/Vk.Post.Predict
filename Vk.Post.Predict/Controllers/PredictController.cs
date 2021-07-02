@@ -48,6 +48,14 @@ namespace Vk.Post.Predict.Controllers
             return File(JsonSerializer.SerializeToUtf8Bytes(messages), MediaTypeNames.Text.Plain, "data.json");
         }
 
+        [HttpPut]
+        public async Task<IActionResult> Create([FromBody] Message message)
+        {
+            await _dataContext.Messages.AddAsync(message);
+            await _dataContext.SaveChangesAsync();
+            return Ok();
+        }
+
         [HttpDelete]
         public async Task<IActionResult> Delete()
         {

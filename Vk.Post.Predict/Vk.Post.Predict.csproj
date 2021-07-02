@@ -9,6 +9,7 @@
     <ItemGroup>
         <PackageReference Include="Grpc" Version="2.38.1" />
         <PackageReference Include="Grpc.AspNetCore" Version="2.38.0" />
+        <PackageReference Include="Grpc.AspNetCore.Web" Version="2.38.0" />
         <PackageReference Include="Grpc.Tools" Version="2.38.1">
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

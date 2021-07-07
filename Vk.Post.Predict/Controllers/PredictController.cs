@@ -25,19 +25,28 @@ namespace Vk.Post.Predict.Controllers
         }
 
         [HttpPost]
-        public IEnumerable<MessagePredictResponse> GetPredictResponses(
+        public async Task<IEnumerable<MessagePredictResponse>> GetPredictResponses(
             [FromBody] IEnumerable<MessagePredictRequest> messagePredictRequests)
         {
-            return messagePredictRequests.Select(request => new MessagePredictResponse
+            var ids = messagePredictRequests.Select(f => $"{f.OwnerId}_{f.Id}");
+
+            var messages = await _dataContext.Messages.Where(f => ids.Contains($"{f.OwnerId}_{f.Id}")).ToListAsync();
+
+            return messagePredictRequests.Select(request =>
             {
-                Id = request.Id,
-                OwnerId = request.OwnerId,
-                Category = _predictionEnginePool.Predict(new VkMessageML
+                var message = messages.FirstOrDefault(a => a.Id == request.Id && a.OwnerId == request.OwnerId);
+                return new MessagePredictResponse
                 {
                     Id = request.Id,
-                    Text = request.Text,
-                    OwnerId = request.OwnerId
-                })?.Category
+                    OwnerId = request.OwnerId,
+                    Category = message?.Category ?? _predictionEnginePool.Predict(new VkMessageML
+                    {
+                        Id = request.Id,
+                        Text = request.Text,
+                        OwnerId = request.OwnerId
+                    })?.Category,
+                    IsAccept = message != null
+                };
             });
         }
 

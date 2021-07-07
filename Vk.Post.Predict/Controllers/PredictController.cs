@@ -30,7 +30,9 @@ namespace Vk.Post.Predict.Controllers
         {
             var ids = messagePredictRequests.Select(f => $"{f.OwnerId}_{f.Id}");
 
-            var messages = await _dataContext.Messages.Where(f => ids.Contains($"{f.OwnerId}_{f.Id}")).ToListAsync();
+            var messages = await _dataContext.Messages
+                .Select(s => new {s.OwnerId, s.Id, s.Category, key = s.OwnerId.ToString() + "_" + s.Id.ToString()})
+                .Where(f => ids.Contains(f.key)).ToListAsync();
 
             return messagePredictRequests.Select(request =>
             {
@@ -57,10 +59,21 @@ namespace Vk.Post.Predict.Controllers
             return File(JsonSerializer.SerializeToUtf8Bytes(messages), MediaTypeNames.Text.Plain, "data.json");
         }
 
+
         [HttpPut]
         public async Task<IActionResult> Create([FromBody] Message message)
         {
-            await _dataContext.Messages.AddAsync(message);
+            var exist = await _dataContext.Messages.FirstOrDefaultAsync(a =>
+                a.Id == message.Id && a.OwnerId == message.OwnerId);
+            if (exist == null)
+            {
+                await _dataContext.Messages.AddAsync(message);
+            }
+            else
+            {
+                exist.Category = message.Category;
+            }
+
             await _dataContext.SaveChangesAsync();
             return Ok();
         }

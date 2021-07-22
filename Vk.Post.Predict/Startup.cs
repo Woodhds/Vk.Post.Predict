@@ -24,6 +24,7 @@ namespace Vk.Post.Predict
         {
             services.AddControllers();
             services.AddTransient<IMigrateDatabase, MigrateDatabase>();
+            services.AddTransient<IMessageUpdateService, MessageUpdateService>();
             services.AddPredictionEnginePool<VkMessageML, VkMessagePredict>()
                 .FromUri("https://github.com/Woodhds/Vk.Post.Model/raw/master/Model.zip", TimeSpan.FromDays(1));
 

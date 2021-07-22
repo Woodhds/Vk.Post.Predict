@@ -43,6 +43,8 @@ namespace Vk.Post.Predict
             {
                 message.OwnerName = ownerDictionary[message.OwnerId];
             }
+            
+            await _dataContext.SaveChangesAsync();
 
             return messages.Length;
         }

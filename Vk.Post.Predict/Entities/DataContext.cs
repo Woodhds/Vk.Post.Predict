@@ -13,6 +13,10 @@ namespace Vk.Post.Predict.Entities
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Message>()
+                .Property(f => f.Id)
+                .ValueGeneratedNever();
+
+            modelBuilder.Entity<Message>()
                 .HasIndex(f => new {f.Id, f.OwnerId});
 
             base.OnModelCreating(modelBuilder);

@@ -2,8 +2,9 @@
 {
     public record MessagePredictResponse
     {
-        public int OwnerId { get; set; }
-        public int Id { get; set; }
-        public string Category { get; set; }
+        public int OwnerId { get; init; }
+        public int Id { get; init; }
+        public string Category { get; init; }
+        public bool IsAccept { get; init; }
     }
 }

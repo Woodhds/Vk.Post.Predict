@@ -49,12 +49,10 @@ namespace Vk.Post.Predict
 
             app.UseRouting();
 
-            app.UseGrpcWeb();
-
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
-                endpoints.MapGrpcService<MessageService>().EnableGrpcWeb();
+                endpoints.MapGrpcService<MessageService>();
             });
 
             app.ApplicationServices.GetRequiredService<IMigrateDatabase>().Migrate();

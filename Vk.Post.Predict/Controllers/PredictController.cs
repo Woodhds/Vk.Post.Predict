@@ -3,12 +3,12 @@ using System.Linq;
 using System.Net.Mime;
 using System.Text.Encodings.Web;
 using System.Text.Json;
-using System.Text.Unicode;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.ML;
 using Vk.Post.Predict.Entities;
+using Vk.Post.Predict.Models;
 
 namespace Vk.Post.Predict.Controllers
 {

@@ -1,4 +1,4 @@
-﻿namespace Vk.Post.Predict
+﻿namespace Vk.Post.Predict.Models
 {
     public record MessagePredictRequest
     {

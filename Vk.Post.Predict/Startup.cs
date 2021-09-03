@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.ML;
 using Vk.Post.Predict.Entities;
+using Vk.Post.Predict.Models;
 
 namespace Vk.Post.Predict
 {
@@ -36,7 +37,6 @@ namespace Vk.Post.Predict
                 x => x.UseNpgsql(string.IsNullOrEmpty(connUrl)
                     ? Configuration.GetConnectionString("DataContext")
                     : GetConnectionString(connUrl)));
-            services.AddGrpc();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -52,7 +52,6 @@ namespace Vk.Post.Predict
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
-                endpoints.MapGrpcService<MessageService>();
             });
 
             app.ApplicationServices.GetRequiredService<IMigrateDatabase>().Migrate();

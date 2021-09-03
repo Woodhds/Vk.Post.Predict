@@ -1,6 +1,6 @@
 ﻿using Microsoft.ML.Data;
 
-namespace Vk.Post.Predict
+namespace Vk.Post.Predict.Models
 {
     public class VkMessageML
     {

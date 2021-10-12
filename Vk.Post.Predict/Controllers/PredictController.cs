@@ -30,13 +30,14 @@ namespace Vk.Post.Predict.Controllers
         public async Task<IEnumerable<MessagePredictResponse>> GetPredictResponses(
             [FromBody] IEnumerable<MessagePredictRequest> messagePredictRequests)
         {
-            var ids = messagePredictRequests.Select(f => $"{f.OwnerId}_{f.Id}");
+            var ids = messagePredictRequests.Select(f => $"{f.OwnerId}_{f.Id}").ToArray();
             await using var connection = _connectionFactory.GetConnection();
             await using var command = connection.CreateCommand();
             command.CommandText =
                 @"select ""OwnerId"", ""Id"", ""Category"" from 
-                        (select concat(""OwnerId"", '_', ""Id"") as k, ""OwnerId"", ""Id"", ""Category"" from ""Messages"") 
+                        (select concat(""OwnerId"", '_', ""Id"") as k, ""OwnerId"", ""Id"", ""Category"" from ""Messages"") sub
                         where k = any(@keys)";
+            command.Parameters.AddWithValue("keys", ids);
             await connection.OpenAsync();
             await command.PrepareAsync();
             await using var reader = await command.ExecuteReaderAsync();

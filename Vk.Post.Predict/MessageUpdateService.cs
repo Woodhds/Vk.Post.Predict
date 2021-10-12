@@ -1,8 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
-using Vk.Post.Predict.Entities;
+using Npgsql;
 using Vk.Post.Predict.Models;
 
 namespace Vk.Post.Predict
@@ -19,34 +18,49 @@ namespace Vk.Post.Predict
 
     public class MessageUpdateService : IMessageUpdateService
     {
-        private readonly DataContext _dataContext;
+        private readonly IConnectionFactory _connectionFactory;
 
-        public MessageUpdateService(IDbContextFactory<DataContext> _contextFactory)
+        public MessageUpdateService(IConnectionFactory contextFactory)
         {
-            _dataContext = _contextFactory.CreateDbContext();
+            _connectionFactory = contextFactory;
         }
 
         public async ValueTask<int> UpdateMessageOwners(IEnumerable<UpdateMessageOwner> owners)
         {
             if (owners == null || !owners.Any())
             {
-                return 1;
+                return 0;
             }
 
             var ownerDictionary = owners.ToDictionary(f => f.Id, f => f.Name);
             var ownerIds = ownerDictionary.Select(f => f.Key);
 
+            await using var connection = _connectionFactory.GetConnection();
+            await using var command = connection.CreateCommand();
+            command.CommandText = @"Select ""Id"", ""OwnerId"" from ""Messages"" where ""OwnerId"" = any(@ownerIds)";
+            command.Parameters.AddWithValue("ownerIds", ownerIds);
 
-            var messages = await _dataContext.Messages.Where(f => ownerIds.Contains(f.OwnerId)).ToArrayAsync();
-
-            foreach (var message in messages)
-            {
-                message.OwnerName = ownerDictionary[message.OwnerId];
-            }
+            await connection.OpenAsync();
             
-            await _dataContext.SaveChangesAsync();
+            await using var reader = await command.ExecuteReaderAsync();
+            await using var batch = connection.CreateBatch();
+            while (await reader.ReadAsync())
+            {
+                var owner = reader.GetInt32(1);
+                batch.BatchCommands.Add(new NpgsqlBatchCommand
+                {
+                    CommandText = @"update ""Messages"" set ""OwnerName"" = @owner where ""Id"" = @id",
+                    Parameters =
+                    {
+                        new NpgsqlParameter("id", reader.GetInt32(0)),
+                        new NpgsqlParameter("owner", ownerDictionary[owner])
+                    }
+                });
+            }
 
-            return messages.Length;
+            await batch.ExecuteNonQueryAsync();
+
+            return reader.RecordsAffected;
         }
     }
 }

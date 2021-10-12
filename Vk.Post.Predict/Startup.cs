@@ -24,8 +24,8 @@ namespace Vk.Post.Predict
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
-            services.AddTransient<IMigrateDatabase, MigrateDatabase>();
-            services.AddTransient<IMessageUpdateService, MessageUpdateService>();
+            services.AddSingleton<IMigrateDatabase, MigrateDatabase>();
+            services.AddSingleton<IMessageUpdateService, MessageUpdateService>();
             services.AddPredictionEnginePool<VkMessageML, VkMessagePredict>()
                 .FromUri("https://github.com/Woodhds/Vk.Post.Model/raw/master/Model.zip", TimeSpan.FromDays(1));
 
@@ -33,8 +33,8 @@ namespace Vk.Post.Predict
             // Parse connection URL to connection string for Npgsql
 
 
-            services.AddDbContextFactory<DataContext>(
-                x => x.UseNpgsql(string.IsNullOrEmpty(connUrl)
+            services.AddSingleton<IConnectionFactory, ConnectionFactory>(
+                x => new ConnectionFactory(string.IsNullOrEmpty(connUrl)
                     ? Configuration.GetConnectionString("DataContext")
                     : GetConnectionString(connUrl)));
         }

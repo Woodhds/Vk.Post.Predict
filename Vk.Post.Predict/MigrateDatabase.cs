@@ -1,7 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Vk.Post.Predict.Entities;
-
-namespace Vk.Post.Predict
+﻿namespace Vk.Post.Predict
 {
     public interface IMigrateDatabase
     {
@@ -10,16 +7,28 @@ namespace Vk.Post.Predict
     
     public class MigrateDatabase : IMigrateDatabase
     {
-        private readonly DataContext _dataContext;
-
-        public MigrateDatabase(IDbContextFactory<DataContext> dbContextFactory)
+        private readonly IConnectionFactory _connectionFactory;
+        public MigrateDatabase(IConnectionFactory connectionFactory)
         {
-            _dataContext = dbContextFactory.CreateDbContext();
+            _connectionFactory = connectionFactory;
         }
         
         public void Migrate()
         {
-            _dataContext.Database.Migrate();
+            using var connection = _connectionFactory.GetConnection();
+            connection.Open();
+            using var command = connection.CreateCommand();
+            command.CommandText = @"
+                CREATE TABLE IF NOT EXISTS Messages (
+                    Id integer,
+                    OwnerId integer,
+                    OwnerName varchar,
+                    Text varchar,
+                    Category varchar
+                );
+                create unique index if not exists IX_Messages_Id_OwnerId on Messages(OwnerId, Id)
+            ";
+            command.ExecuteNonQuery();
         }
     }
 }

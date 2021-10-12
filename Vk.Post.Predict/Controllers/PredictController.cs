@@ -5,8 +5,8 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.ML;
+using Npgsql;
 using Vk.Post.Predict.Entities;
 using Vk.Post.Predict.Models;
 
@@ -17,13 +17,13 @@ namespace Vk.Post.Predict.Controllers
     public class PredictController : ControllerBase
     {
         private readonly PredictionEnginePool<VkMessageML, VkMessagePredict> _predictionEnginePool;
-        private readonly DataContext _dataContext;
+        private readonly IConnectionFactory _connectionFactory;
 
         public PredictController(PredictionEnginePool<VkMessageML, VkMessagePredict> predictionEnginePool,
-            IDbContextFactory<DataContext> contextFactory)
+            IConnectionFactory connectionFactory)
         {
             _predictionEnginePool = predictionEnginePool;
-            _dataContext = contextFactory.CreateDbContext();
+            _connectionFactory = connectionFactory;
         }
 
         [HttpPost]
@@ -31,10 +31,21 @@ namespace Vk.Post.Predict.Controllers
             [FromBody] IEnumerable<MessagePredictRequest> messagePredictRequests)
         {
             var ids = messagePredictRequests.Select(f => $"{f.OwnerId}_{f.Id}");
-
-            var messages = await _dataContext.Messages
-                .Select(s => new {s.OwnerId, s.Id, s.Category, key = s.OwnerId.ToString() + "_" + s.Id.ToString()})
-                .Where(f => ids.Contains(f.key)).ToListAsync();
+            await using var connection = _connectionFactory.GetConnection();
+            await using var command = connection.CreateCommand();
+            command.CommandText =
+                @"select ""OwnerId"", ""Id"", ""Category"" from 
+                        (select concat(""OwnerId"", '_', ""Id"") as k, ""OwnerId"", ""Id"", ""Category"" from ""Messages"") 
+                        where k = any(@keys)";
+            await connection.OpenAsync();
+            await command.PrepareAsync();
+            await using var reader = await command.ExecuteReaderAsync();
+            var messages = new List<(int OwnerId, int Id, string Category)>();
+            while (await reader.ReadAsync())
+            {
+                var message = (reader.GetInt32(0), reader.GetInt32(1), reader.GetString(2));
+                messages.Add(message);
+            }
 
             return messagePredictRequests.Select(request =>
             {
@@ -43,13 +54,15 @@ namespace Vk.Post.Predict.Controllers
                 {
                     Id = request.Id,
                     OwnerId = request.OwnerId,
-                    Category = message?.Category ?? _predictionEnginePool.Predict(new VkMessageML
-                    {
-                        Id = request.Id,
-                        Text = request.Text,
-                        OwnerId = request.OwnerId
-                    })?.Category,
-                    IsAccept = message != null
+                    Category = string.IsNullOrWhiteSpace(message.Category)
+                        ? _predictionEnginePool.Predict(new VkMessageML
+                        {
+                            Id = request.Id,
+                            Text = request.Text,
+                            OwnerId = request.OwnerId
+                        })?.Category
+                        : message.Category,
+                    IsAccept = message != default
                 };
             });
         }
@@ -57,7 +70,24 @@ namespace Vk.Post.Predict.Controllers
         [HttpGet]
         public async Task<IActionResult> Get()
         {
-            var messages = await _dataContext.Messages.ToListAsync();
+            await using var connection = _connectionFactory.GetConnection();
+            await using var command = connection.CreateCommand();
+            await connection.OpenAsync();
+            command.CommandText = @"select ""Id"", ""OwnerId"", ""Category"", ""Text"", ""OwnerName"" from ""Messages""";
+            await using var reader = await command.ExecuteReaderAsync();
+            var messages = new List<Message>(256);
+            while (await reader.ReadAsync())
+            {
+                messages.Add(new Message
+                {
+                    Id = reader.GetInt32(0),
+                    OwnerId = reader.GetInt32(1),
+                    Category = reader.GetString(2),
+                    Text = reader.GetString(3),
+                    OwnerName = reader.GetString(4)
+                });
+            }
+
             return File(JsonSerializer.SerializeToUtf8Bytes(messages, new JsonSerializerOptions
             {
                 Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
@@ -68,26 +98,48 @@ namespace Vk.Post.Predict.Controllers
         [HttpPut]
         public async Task<IActionResult> Create([FromBody] Message message)
         {
-            var exist = await _dataContext.Messages.FirstOrDefaultAsync(a =>
-                a.Id == message.Id && a.OwnerId == message.OwnerId);
-            if (exist == null)
+            await using var connection = _connectionFactory.GetConnection();
+            await using var command = connection.CreateCommand();
+            command.CommandText = @"select exists(select 1 from ""Messages"" where ""Id"" = @id and ""OwnerId"" = @owner)";
+            command.Parameters.AddRange(new[]
             {
-                await _dataContext.Messages.AddAsync(message);
+                new NpgsqlParameter("id", message.Id),
+                new NpgsqlParameter("owner", message.OwnerId)
+            });
+            await connection.OpenAsync();
+            await command.PrepareAsync();
+
+            if (!(bool)await command.ExecuteScalarAsync())
+            {
+                command.CommandText =
+                    @"insert into ""Messages"" (""Id"", ""OwnerId"", ""Text"", ""Category"", ""OwnerName"") 
+                        values (@id, @owner, @text, @category, @ownerName)";
+
+                command.Parameters.AddRange(new[]
+                {
+                    new NpgsqlParameter("text", message.Text),
+                    new NpgsqlParameter("category", message.Category),
+                    new NpgsqlParameter("ownerName", message.OwnerName),
+                });
             }
             else
             {
-                exist.Category = message.Category;
+                command.CommandText = @"update ""Messages"" set ""Category"" = @category where ""Id"" = @id and ""OwnerId"" = @owner";
+                command.Parameters.AddWithValue("category", message.Category);
             }
 
-            await _dataContext.SaveChangesAsync();
+            await command.ExecuteNonQueryAsync();
+
             return Ok();
         }
 
         [HttpDelete]
         public async Task<IActionResult> Delete()
         {
-            _dataContext.Messages.RemoveRange(_dataContext.Messages);
-            await _dataContext.SaveChangesAsync();
+            await using var connection = _connectionFactory.GetConnection();
+            await using var command = connection.CreateCommand();
+            command.CommandText = @"truncate ""Messages""";
+            await command.ExecuteNonQueryAsync();
             return Ok();
         }
     }

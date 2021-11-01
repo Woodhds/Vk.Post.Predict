@@ -1,22 +1,24 @@
 ﻿using Npgsql;
 
-namespace Vk.Post.Predict;
-
-public interface IConnectionFactory
+namespace Vk.Post.Predict
 {
-    NpgsqlConnection GetConnection();
-}
-
-public class ConnectionFactory : IConnectionFactory
-{
-    private readonly string _connectionString;
-    public ConnectionFactory(string connectionString)
+    public interface IConnectionFactory
     {
-        _connectionString = connectionString;
+        NpgsqlConnection GetConnection();
     }
-    
-    public NpgsqlConnection GetConnection()
+
+    public class ConnectionFactory : IConnectionFactory
     {
-        return new NpgsqlConnection(_connectionString);
+        private readonly string _connectionString;
+
+        public ConnectionFactory(string connectionString)
+        {
+            _connectionString = connectionString;
+        }
+
+        public NpgsqlConnection GetConnection()
+        {
+            return new NpgsqlConnection(_connectionString);
+        }
     }
 }

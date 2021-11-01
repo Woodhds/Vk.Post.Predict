@@ -28,7 +28,7 @@ namespace Vk.Post.Predict.Controllers
 
         [HttpPost]
         public async Task<IEnumerable<MessagePredictResponse>> GetPredictResponses(
-            [FromBody] IEnumerable<MessagePredictRequest> messagePredictRequests)
+            [FromBody] IReadOnlyCollection<MessagePredictRequest> messagePredictRequests)
         {
             var ids = messagePredictRequests.Select(f => $"{f.OwnerId}_{f.Id}").ToArray();
             await using var connection = _connectionFactory.GetConnection();

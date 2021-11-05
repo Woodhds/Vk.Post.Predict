@@ -1,10 +1,4 @@
 ﻿namespace Vk.Post.Predict.Models
 {
-    public record MessagePredictResponse
-    {
-        public int OwnerId { get; init; }
-        public int Id { get; init; }
-        public string Category { get; init; }
-        public bool IsAccept { get; init; }
-    }
+    public record MessagePredictResponse(int OwnerId, int Id, string Category, bool IsAccept);
 }

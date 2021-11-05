@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.ML;
 using Vk.Post.Predict.Models;
+using Vk.Post.Predict.Services;
 
 namespace Vk.Post.Predict
 {
@@ -22,8 +23,9 @@ namespace Vk.Post.Predict
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
-            services.AddSingleton<IMigrateDatabase, MigrateDatabase>();
-            services.AddSingleton<IMessageUpdateService, MessageUpdateService>();
+            services.AddScoped<IMigrateDatabase, MigrateDatabase>();
+            services.AddTransient<IMessageUpdateService, MessageUpdateService>();
+            services.AddScoped<IMessageService, MessageService>();
             services.AddPredictionEnginePool<VkMessageML, VkMessagePredict>()
                 .FromUri("https://github.com/Woodhds/Vk.Post.Model/raw/master/Model.zip", TimeSpan.FromDays(1));
 
@@ -51,8 +53,6 @@ namespace Vk.Post.Predict
             {
                 endpoints.MapControllers();
             });
-
-            app.ApplicationServices.GetRequiredService<IMigrateDatabase>().Migrate();
         }
 
         string GetConnectionString(string connUrl)

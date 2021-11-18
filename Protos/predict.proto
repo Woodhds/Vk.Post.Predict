@@ -1,0 +1,33 @@
+﻿syntax = "proto3";
+
+package vk.post.predict.service;
+import "google/api/annotations.proto";
+
+service PredictService {
+    rpc Predict(MessagePredictRequest) returns (MessagePredictResponse) {
+        option (google.api.http) = {
+            post: "/predict"
+        };
+    };
+}
+
+message MessagePredictRequest {
+
+repeated MessagePredict messages = 1;
+
+    message MessagePredict {
+        int32 owner_id = 1;
+        int32 id = 2;
+        string text = 3;
+    }
+}
+
+message MessagePredictResponse {
+    repeated MessagePredicted messages = 1;
+
+    message MessagePredicted {
+        int32 owner_id = 1;
+        int32 id = 2;
+        string category = 3;
+    }
+}

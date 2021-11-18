@@ -1,24 +1,24 @@
-﻿namespace Vk.Post.Predict
+﻿namespace Vk.Post.Predict;
+
+public interface IMigrateDatabase
 {
-    public interface IMigrateDatabase
+    void Migrate();
+}
+
+public class MigrateDatabase : IMigrateDatabase
+{
+    private readonly IConnectionFactory _connectionFactory;
+    public MigrateDatabase(IConnectionFactory connectionFactory)
     {
-        void Migrate();
+        _connectionFactory = connectionFactory;
     }
-    
-    public class MigrateDatabase : IMigrateDatabase
+
+    public void Migrate()
     {
-        private readonly IConnectionFactory _connectionFactory;
-        public MigrateDatabase(IConnectionFactory connectionFactory)
-        {
-            _connectionFactory = connectionFactory;
-        }
-        
-        public void Migrate()
-        {
-            using var connection = _connectionFactory.GetConnection();
-            connection.Open();
-            using var command = connection.CreateCommand();
-            command.CommandText = @"
+        using var connection = _connectionFactory.GetConnection();
+        connection.Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = @"
                 CREATE TABLE IF NOT EXISTS Messages (
                     Id integer,
                     OwnerId integer,
@@ -28,7 +28,6 @@
                 );
                 create unique index if not exists IX_Messages_Id_OwnerId on Messages(OwnerId, Id)
             ";
-            command.ExecuteNonQuery();
-        }
+        command.ExecuteNonQuery();
     }
 }

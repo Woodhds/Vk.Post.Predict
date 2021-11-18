@@ -1,27 +1,26 @@
 ﻿using System;
 
-namespace Vk.Post.Predict.Entities
+namespace Vk.Post.Predict.Entities;
+
+public readonly struct MessageId : IEquatable<MessageId>
 {
-    public readonly struct MessageId : IEquatable<MessageId>
+    public int Id { get; }
+
+    public int OwnerId { get; }
+
+    public MessageId(int id, int ownerId)
     {
-        public int Id { get; }
-        
-        public int OwnerId { get; }
+        Id = id;
+        OwnerId = ownerId;
+    }
 
-        public MessageId(int id, int ownerId)
-        {
-            Id = id;
-            OwnerId = ownerId;
-        }
+    public bool Equals(MessageId other)
+    {
+        return other.OwnerId == OwnerId && other.Id == Id;
+    }
 
-        public bool Equals(MessageId other)
-        {
-            return other.OwnerId == OwnerId && other.Id == Id;
-        }
-
-        public override string ToString()
-        {
-            return $"{OwnerId}_{Id}";
-        }
+    public override string ToString()
+    {
+        return $"{OwnerId}_{Id}";
     }
 }

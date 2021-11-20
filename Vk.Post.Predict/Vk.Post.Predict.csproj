@@ -17,7 +17,6 @@
     <PackageReference Include="Microsoft.Extensions.ML" Version="1.7.0" />
     <PackageReference Include="Microsoft.ML" Version="1.7.0" />
     <PackageReference Include="Npgsql" Version="6.0.0" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3" />
   </ItemGroup>
 
   <ItemGroup>

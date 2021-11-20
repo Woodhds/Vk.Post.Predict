@@ -15,7 +15,8 @@ namespace Vk.Post.Predict.Services
         private readonly PredictionEnginePool<VkMessageML, VkMessagePredict> _predictionEnginePool;
         private readonly IMessageService _messageService;
 
-        public MessagePredictService(PredictionEnginePool<VkMessageML, VkMessagePredict> predictionEnginePool, IMessageService messageService)
+        public MessagePredictService(PredictionEnginePool<VkMessageML, VkMessagePredict> predictionEnginePool, 
+            IMessageService messageService)
         {
             _predictionEnginePool = predictionEnginePool;
             _messageService = messageService;
@@ -26,19 +27,12 @@ namespace Vk.Post.Predict.Services
         {
             var messages = await _messageService.GetMessages(request.Messages.Select(f => new MessageId(f.Id, f.OwnerId)).ToArray());
 
-            var predicted = request.Messages.Select(f => new
-            {
-                f.Id,
-                f.OwnerId,
-                Category = _predictionEnginePool.Predict(new VkMessageML { Text = f.Text, OwnerId = f.OwnerId, Id = f.Id })
-            });
-
             return new MessagePredictResponse
             {
                 Messages = {
-                    request.Messages.GroupJoin(messages, 
-                    a => new { a.Id, a.OwnerId }, 
-                    a => new { a.Id, a.OwnerId }, 
+                    request.Messages.GroupJoin(messages,
+                    a => new { a.Id, a.OwnerId },
+                    a => new { a.Id, a.OwnerId },
                     (e, y) => new MessagePredictResponse.Types.MessagePredicted
                     {
                         Id = e.Id,

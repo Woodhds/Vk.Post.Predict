@@ -6,7 +6,8 @@ import "google/api/annotations.proto";
 service PredictService {
     rpc Predict(MessagePredictRequest) returns (MessagePredictResponse) {
         option (google.api.http) = {
-            post: "/predict"
+            post: "/predict",
+            body: "messages"
         };
     };
 }
@@ -16,7 +17,7 @@ message MessagePredictRequest {
 repeated MessagePredict messages = 1;
 
     message MessagePredict {
-        int32 owner_id = 1;
+        int32 owner_id = 1 [json_name="ownerId"];
         int32 id = 2;
         string text = 3;
     }
@@ -26,7 +27,7 @@ message MessagePredictResponse {
     repeated MessagePredicted messages = 1;
 
     message MessagePredicted {
-        int32 owner_id = 1;
+        int32 owner_id = 1 [json_name="ownerId"];
         int32 id = 2;
         string category = 3;
     }

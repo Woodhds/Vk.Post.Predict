@@ -38,7 +38,10 @@ namespace Vk.Post.Predict
                     ? Configuration.GetConnectionString("DataContext")
                     : GetConnectionString(connUrl)));
 
-            services.AddGrpc();
+            services.AddGrpc(x =>
+            {
+                x.EnableDetailedErrors = true;
+            });
             services.AddGrpcHttpApi();
         }
 

@@ -13,7 +13,7 @@ namespace Vk.Post.Predict.Services
         private readonly PredictionEnginePool<VkMessageML, VkMessagePredict> _predictionEnginePool;
         private readonly IMessageService _messageService;
 
-        public MessagePredictService(PredictionEnginePool<VkMessageML, VkMessagePredict> predictionEnginePool, 
+        public MessagePredictService(PredictionEnginePool<VkMessageML, VkMessagePredict> predictionEnginePool,
             IMessageService messageService)
         {
             _predictionEnginePool = predictionEnginePool;
@@ -23,21 +23,32 @@ namespace Vk.Post.Predict.Services
 
         public override async Task<PredictMessage> Predict(PredictMessage request, ServerCallContext context)
         {
-            var messages = await _messageService.GetMessages(request.Messages.Select(f => new MessageId(f.Id, f.OwnerId)).ToArray());
+            var messages =
+                await _messageService.GetMessages(
+                    request.Messages.Select(f => new MessageId(f.Id, f.OwnerId)).ToArray());
 
             return new PredictMessage
             {
-                Messages = {
+                Messages =
+                {
                     request.Messages.GroupJoin(messages,
-                    a => new { a.Id, a.OwnerId },
-                    a => new { a.Id, a.OwnerId },
-                    (e, y) => new PredictMessage.Types.MessagePredict
-                    {
-                        Id = e.Id,
-                        OwnerId = e.OwnerId,
-                        Category = y.Select(f => f.Category).FirstOrDefault() ?? _predictionEnginePool.Predict(new VkMessageML { Text = e.Text, OwnerId = e.OwnerId, Id = e.Id })?.Category,
-                        IsAccept = y.Select(f => f.Category).FirstOrDefault() != default
-                    })
+                        a => new { a.Id, a.OwnerId },
+                        a => new { a.Id, a.OwnerId },
+                        (e, y) =>
+                        {
+                            var category = y.Select(f => f.Category).FirstOrDefault();
+                            return new PredictMessage.Types.MessagePredict
+                            {
+                                Id = e.Id,
+                                OwnerId = e.OwnerId,
+                                Category = string.IsNullOrEmpty(category)
+                                    ? _predictionEnginePool
+                                        .Predict(new VkMessageML { Text = e.Text, OwnerId = e.OwnerId, Id = e.Id })
+                                        ?.Category
+                                    : category,
+                                IsAccept = category != default
+                            };
+                        })
                 }
             };
         }

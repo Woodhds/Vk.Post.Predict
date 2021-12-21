@@ -50,6 +50,7 @@ public class PredictController : ControllerBase
         await using var connection = _connectionFactory.GetConnection();
         await using var command = connection.CreateCommand();
         command.CommandText = @"truncate ""Messages""";
+        await connection.OpenAsync();
         await command.ExecuteNonQueryAsync();
         return Ok();
     }

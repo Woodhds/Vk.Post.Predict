@@ -4,30 +4,23 @@ package vk.post.predict.service;
 import "google/api/annotations.proto";
 
 service PredictService {
-    rpc Predict(MessagePredictRequest) returns (MessagePredictResponse) {
+    rpc Predict(PredictMessage) returns (PredictMessage) {
         option (google.api.http) = {
-            post: "/predict"
+            post: "/predict",
+            body: "messages"
         };
     };
 }
 
-message MessagePredictRequest {
-
-repeated MessagePredict messages = 1;
+message PredictMessage {
 
     message MessagePredict {
-        int32 owner_id = 1;
+        int32 owner_id = 1 [json_name="ownerId"];
         int32 id = 2;
         string text = 3;
+        string category = 4;
+        bool is_accept = 5 [json_name="isAccept"];
     }
-}
 
-message MessagePredictResponse {
-    repeated MessagePredicted messages = 1;
-
-    message MessagePredicted {
-        int32 owner_id = 1;
-        int32 id = 2;
-        string category = 3;
-    }
+    repeated MessagePredict messages = 1 [json_name="messages"];
 }

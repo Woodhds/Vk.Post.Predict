@@ -5,8 +5,6 @@ using Microsoft.Extensions.ML;
 using Vk.Post.Predict.Entities;
 using Vk.Post.Predict.Models;
 using Vk.Post.Predict.Service;
-using MessagePredictRequest = Vk.Post.Predict.Service.MessagePredictRequest;
-using MessagePredictResponse = Vk.Post.Predict.Service.MessagePredictResponse;
 
 namespace Vk.Post.Predict.Services
 {
@@ -15,36 +13,42 @@ namespace Vk.Post.Predict.Services
         private readonly PredictionEnginePool<VkMessageML, VkMessagePredict> _predictionEnginePool;
         private readonly IMessageService _messageService;
 
-        public MessagePredictService(PredictionEnginePool<VkMessageML, VkMessagePredict> predictionEnginePool, IMessageService messageService)
+        public MessagePredictService(PredictionEnginePool<VkMessageML, VkMessagePredict> predictionEnginePool,
+            IMessageService messageService)
         {
             _predictionEnginePool = predictionEnginePool;
             _messageService = messageService;
         }
 
 
-        public override async Task<MessagePredictResponse> Predict(MessagePredictRequest request, ServerCallContext context)
+        public override async Task<PredictMessage> Predict(PredictMessage request, ServerCallContext context)
         {
-            var messages = await _messageService.GetMessages(request.Messages.Select(f => new MessageId(f.Id, f.OwnerId)).ToArray());
+            var messages =
+                await _messageService.GetMessages(
+                    request.Messages.Select(f => new MessageId(f.Id, f.OwnerId)).ToArray());
 
-            var predicted = request.Messages.Select(f => new
+            return new PredictMessage
             {
-                f.Id,
-                f.OwnerId,
-                Category = _predictionEnginePool.Predict(new VkMessageML { Text = f.Text, OwnerId = f.OwnerId, Id = f.Id })
-            });
-
-            return new MessagePredictResponse
-            {
-                Messages = {
-                    request.Messages.GroupJoin(messages, 
-                    a => new { a.Id, a.OwnerId }, 
-                    a => new { a.Id, a.OwnerId }, 
-                    (e, y) => new MessagePredictResponse.Types.MessagePredicted
-                    {
-                        Id = e.Id,
-                        OwnerId = e.OwnerId,
-                        Category = y.Select(f => f.Category).FirstOrDefault() ?? _predictionEnginePool.Predict(new VkMessageML { Text = e.Text, OwnerId = e.OwnerId, Id = e.Id })?.Category
-                    })
+                Messages =
+                {
+                    request.Messages.GroupJoin(messages,
+                        a => new { a.Id, a.OwnerId },
+                        a => new { a.Id, a.OwnerId },
+                        (e, y) =>
+                        {
+                            var category = y.Select(f => f.Category).FirstOrDefault();
+                            return new PredictMessage.Types.MessagePredict
+                            {
+                                Id = e.Id,
+                                OwnerId = e.OwnerId,
+                                Category = string.IsNullOrEmpty(category)
+                                    ? _predictionEnginePool
+                                        .Predict(new VkMessageML { Text = e.Text, OwnerId = e.OwnerId, Id = e.Id })
+                                        ?.Category
+                                    : category,
+                                IsAccept = category != default
+                            };
+                        })
                 }
             };
         }

@@ -8,6 +8,7 @@ public interface IMigrateDatabase
 public class MigrateDatabase : IMigrateDatabase
 {
     private readonly IConnectionFactory _connectionFactory;
+
     public MigrateDatabase(IConnectionFactory connectionFactory)
     {
         _connectionFactory = connectionFactory;

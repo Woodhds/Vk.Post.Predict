@@ -1,7 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System.Net.Mime;
+using System.Text.Encodings.Web;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Vk.Post.Predict.Models;
+using Vk.Post.Predict.Services;
 
 namespace Vk.Post.Predict.Controllers;
 
@@ -9,16 +11,22 @@ namespace Vk.Post.Predict.Controllers;
 [Route("[controller]")]
 public class MessageController : ControllerBase
 {
-    private readonly IMessageUpdateService _messageUpdateService;
+    private readonly IMessageService _messageService;
 
-    public MessageController(IMessageUpdateService messageUpdateService)
-    {
-        _messageUpdateService = messageUpdateService;
-    }
+    public MessageController(IMessageService messageUpdateService)
+        => _messageService = messageUpdateService;
 
-    [HttpPost]
-    public async Task<int> UpdateOwnerNames([FromBody] IEnumerable<UpdateMessageOwner> owners)
+    [HttpGet]
+    public async Task<IActionResult> Get()
     {
-        return await _messageUpdateService.UpdateMessageOwners(owners);
+        var messages = await _messageService.GetMessages();
+
+        return File(
+            JsonSerializer.SerializeToUtf8Bytes(messages,
+                new JsonSerializerOptions
+                {
+                    Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+                }),
+            MediaTypeNames.Application.Json, "data.json");
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Npgsql;
 using Vk.Post.Predict.Entities;
@@ -11,7 +12,7 @@ public interface IMessageService
     Task<IReadOnlyCollection<Message>> GetMessages();
 
     Task<IReadOnlyCollection<(int OwnerId, int Id, string Category)>> GetMessages(
-        IReadOnlyCollection<MessageId> messageIds);
+        IReadOnlyCollection<MessageId> messageIds, CancellationToken ct);
 
     Task Create(Message message);
 }
@@ -49,7 +50,9 @@ public class MessageService : IMessageService
         return messages;
     }
 
-    public async Task<IReadOnlyCollection<(int OwnerId, int Id, string Category)>> GetMessages(IReadOnlyCollection<MessageId> messageIds)
+    public async Task<IReadOnlyCollection<(int OwnerId, int Id, string Category)>> GetMessages(
+        IReadOnlyCollection<MessageId> messageIds, 
+        CancellationToken ct)
     {
         var ids = messageIds.Select(f => f.ToString()).ToArray();
         await using var connection = _connectionFactory.GetConnection();
@@ -59,11 +62,11 @@ public class MessageService : IMessageService
                         (select concat(""OwnerId"", '_', ""Id"") as k, ""OwnerId"", ""Id"", ""Category"" from ""Messages"") sub
                         where k = any(@keys)";
         command.Parameters.AddWithValue("keys", ids);
-        await connection.OpenAsync();
-        await command.PrepareAsync();
-        await using var reader = await command.ExecuteReaderAsync();
+        await connection.OpenAsync(ct);
+        await command.PrepareAsync(ct);
+        await using var reader = await command.ExecuteReaderAsync(ct);
         var messages = new List<(int OwnerId, int Id, string Category)>(messageIds.Count);
-        while (await reader.ReadAsync())
+        while (await reader.ReadAsync(ct))
         {
             var message = (reader.GetInt32(0), reader.GetInt32(1), reader.GetString(2));
             messages.Add(message);
@@ -80,9 +83,8 @@ public class MessageService : IMessageService
             @"select exists(select 1 from ""Messages"" where ""Id"" = @id and ""OwnerId"" = @owner)";
         command.Parameters.AddRange(new[]
         {
-                new NpgsqlParameter("id", message.Id),
-                new NpgsqlParameter("owner", message.OwnerId)
-            });
+            new NpgsqlParameter("id", message.Id), new NpgsqlParameter("owner", message.OwnerId)
+        });
         await connection.OpenAsync();
         await command.PrepareAsync();
 
@@ -94,8 +96,7 @@ public class MessageService : IMessageService
 
             command.Parameters.AddRange(new[]
                 {
-                    new NpgsqlParameter("text", message.Text),
-                    new NpgsqlParameter("category", message.Category),
+                    new NpgsqlParameter("text", message.Text), new NpgsqlParameter("category", message.Category),
                     new NpgsqlParameter("ownerName", message.OwnerName),
                 }
             );

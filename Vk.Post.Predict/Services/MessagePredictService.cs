@@ -1,56 +1,47 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
-using Grpc.Core;
 using Microsoft.Extensions.ML;
 using Vk.Post.Predict.Entities;
 using Vk.Post.Predict.Models;
-using Vk.Post.Predict.Service;
 
-namespace Vk.Post.Predict.Services
+namespace Vk.Post.Predict.Services;
+
+public interface IMessagePredictService
 {
-    public class MessagePredictService : PredictService.PredictServiceBase
+    Task<IReadOnlyCollection<MessagePredictResponse>> Predict(MessagePredictRequest[] request, CancellationToken ct);
+}
+
+public class MessagePredictService : IMessagePredictService
+{
+    private readonly PredictionEnginePool<VkMessageML, VkMessagePredict> _predictionEnginePool;
+    private readonly IMessageService _messageService;
+
+    public MessagePredictService(PredictionEnginePool<VkMessageML, VkMessagePredict> predictionEnginePool,
+        IMessageService messageService)
     {
-        private readonly PredictionEnginePool<VkMessageML, VkMessagePredict> _predictionEnginePool;
-        private readonly IMessageService _messageService;
+        _predictionEnginePool = predictionEnginePool;
+        _messageService = messageService;
+    }
 
-        public MessagePredictService(PredictionEnginePool<VkMessageML, VkMessagePredict> predictionEnginePool,
-            IMessageService messageService)
-        {
-            _predictionEnginePool = predictionEnginePool;
-            _messageService = messageService;
-        }
+    public async Task<IReadOnlyCollection<MessagePredictResponse>> Predict(MessagePredictRequest[]  request, CancellationToken ct)
+    {
+        var messages =
+            await _messageService.GetMessages(
+                request.Select(f => new MessageId(f.Id, f.OwnerId)).ToArray(), ct);
 
-
-        public override async Task<PredictMessage> Predict(PredictMessage request, ServerCallContext context)
-        {
-            var messages =
-                await _messageService.GetMessages(
-                    request.Messages.Select(f => new MessageId(f.Id, f.OwnerId)).ToArray());
-
-            return new PredictMessage
+        return request.GroupJoin(messages,
+            a => new { a.Id, a.OwnerId },
+            a => new { a.Id, a.OwnerId },
+            (e, y) =>
             {
-                Messages =
-                {
-                    request.Messages.GroupJoin(messages,
-                        a => new { a.Id, a.OwnerId },
-                        a => new { a.Id, a.OwnerId },
-                        (e, y) =>
-                        {
-                            var category = y.Select(f => f.Category).FirstOrDefault();
-                            return new PredictMessage.Types.MessagePredict
-                            {
-                                Id = e.Id,
-                                OwnerId = e.OwnerId,
-                                Category = string.IsNullOrEmpty(category)
-                                    ? _predictionEnginePool
-                                        .Predict(new VkMessageML { Text = e.Text, OwnerId = e.OwnerId, Id = e.Id })
-                                        ?.Category
-                                    : category,
-                                IsAccept = category != default
-                            };
-                        })
-                }
-            };
-        }
+                var category = y.Select(f => f.Category).FirstOrDefault();
+                return new MessagePredictResponse(e.OwnerId, e.Id, string.IsNullOrEmpty(category)
+                    ? _predictionEnginePool
+                        .Predict(new VkMessageML { Text = e.Text, OwnerId = e.OwnerId, Id = e.Id })
+                        ?.Category
+                    : category, category != default);
+            }).ToArray();
     }
 }

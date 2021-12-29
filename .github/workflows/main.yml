@@ -17,3 +17,4 @@ jobs:
           heroku_email: ${{secrets.HEROKU_EMAIL}}
           usedocker: true
           dontuseforce: false
+          stack: container

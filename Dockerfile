@@ -15,4 +15,4 @@ RUN dotnet publish "Vk.Post.Predict.csproj" -c Release -r alpine-x64 --self-cont
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-CMD ASPNETCORE_URLS=https://*:$PORT ./Vk.Post.Predict
+CMD ASPNETCORE_URLS=http://*:$PORT ./Vk.Post.Predict

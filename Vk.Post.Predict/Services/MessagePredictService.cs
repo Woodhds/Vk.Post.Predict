@@ -10,7 +10,7 @@ namespace Vk.Post.Predict.Services;
 
 public interface IMessagePredictService
 {
-    Task<IReadOnlyCollection<MessagePredictResponse>> Predict(MessagePredictRequest[] request, CancellationToken ct);
+    Task<MessagePredictResponse> Predict(MessagePredictRequest[] request, CancellationToken ct);
 }
 
 public class MessagePredictService : IMessagePredictService
@@ -25,23 +25,26 @@ public class MessagePredictService : IMessagePredictService
         _messageService = messageService;
     }
 
-    public async Task<IReadOnlyCollection<MessagePredictResponse>> Predict(MessagePredictRequest[]  request, CancellationToken ct)
+    public async Task<MessagePredictResponse> Predict(MessagePredictRequest[] request, CancellationToken ct)
     {
         var messages =
             await _messageService.GetMessages(
                 request.Select(f => new MessageId(f.Id, f.OwnerId)).ToArray(), ct);
 
-        return request.GroupJoin(messages,
-            a => new { a.Id, a.OwnerId },
-            a => new { a.Id, a.OwnerId },
-            (e, y) =>
-            {
-                var category = y.Select(f => f.Category).FirstOrDefault();
-                return new MessagePredictResponse(e.OwnerId, e.Id, string.IsNullOrEmpty(category)
-                    ? _predictionEnginePool
-                        .Predict(new VkMessageML { Text = e.Text, OwnerId = e.OwnerId, Id = e.Id })
-                        ?.Category
-                    : category, category != default);
-            }).ToArray();
+        return new MessagePredictResponse
+        {
+            Messages = request.GroupJoin(messages,
+                a => new {a.Id, a.OwnerId},
+                a => new {a.Id, a.OwnerId},
+                (e, y) =>
+                {
+                    var category = y.Select(f => f.Category).FirstOrDefault();
+                    return new MessagePredictResponseItem(e.OwnerId, e.Id, string.IsNullOrEmpty(category)
+                        ? _predictionEnginePool
+                            .Predict(new VkMessageML {Text = e.Text, OwnerId = e.OwnerId, Id = e.Id})
+                            ?.Category
+                        : category, category != default);
+                }).ToArray()
+        };
     }
 }

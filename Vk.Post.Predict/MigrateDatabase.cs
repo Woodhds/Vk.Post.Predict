@@ -20,14 +20,14 @@ public class MigrateDatabase : IMigrateDatabase
         connection.Open();
         using var command = connection.CreateCommand();
         command.CommandText = @"
-                CREATE TABLE IF NOT EXISTS Messages (
-                    Id integer,
-                    OwnerId integer,
-                    OwnerName varchar,
-                    Text varchar,
-                    Category varchar
+                CREATE TABLE IF NOT EXISTS ""Messages"" (
+                    ""Id"" integer,
+                    ""OwnerId"" integer,
+                    ""OwnerName"" varchar,
+                    ""Text"" varchar,
+                    ""Category"" varchar
                 );
-                create unique index if not exists IX_Messages_Id_OwnerId on Messages(OwnerId, Id)
+                create unique index if not exists ""IX_Messages_Id_OwnerId"" on ""Messages""(""OwnerId"", ""Id"")
             ";
         command.ExecuteNonQuery();
     }

@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.ML;
-using Microsoft.ML.Data;
 using Vk.Post.Predict.Entities;
 using Vk.Post.Predict.Models;
 
@@ -14,7 +12,7 @@ namespace Vk.Post.Predict.Services;
 public interface IMessagePredictService
 {
     Task<MessagePredictResponse> Predict(MessagePredictRequest[] request, CancellationToken ct);
-    Task<IReadOnlyDictionary<string, decimal>> Predict(MessagePredictRequest request, CancellationToken ct);
+    IReadOnlyDictionary<string, float> Predict(MessagePredictRequest request);
 }
 
 public class MessagePredictService : IMessagePredictService
@@ -60,20 +58,22 @@ public class MessagePredictService : IMessagePredictService
         };
     }
 
-    public async Task<IReadOnlyDictionary<string, decimal>> Predict(MessagePredictRequest request, CancellationToken ct)
+    public IReadOnlyDictionary<string, float> Predict(MessagePredictRequest request)
     {
         var response = _predictionEnginePool.Predict(new VkMessageML
         {
-            Id = request.Id, OwnerId = request.OwnerId, Text = request.Text
+            Id = request.Id, 
+            OwnerId = request.OwnerId, 
+            Text = request.Text
         });
 
-        var top10scores = Categories.ToDictionary(
+        var top10Scores = Categories.ToDictionary(
                 l => l,
-                l => (decimal)response.Score[Array.IndexOf(Categories, l)]
+                l => response.Score[Array.IndexOf(Categories, l)]
             )
             .OrderByDescending(kv => kv.Value)
             .Take(10);
 
-        return top10scores.ToDictionary(x => x.Key, x => x.Value);
+        return top10Scores.ToDictionary(x => x.Key, x => x.Value);
     }
 }

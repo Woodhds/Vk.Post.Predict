@@ -32,10 +32,9 @@ public class PredictController : ControllerBase
     }
 
     [HttpPost("{ownerId:int}/{id:int}")]
-    public async Task<IActionResult> Predict(int ownerId, int id, [FromBody] string text)
+    public IActionResult Predict(int ownerId, int id, [FromBody] string text)
     {
-        return Ok(await _messagePredictService.Predict(new MessagePredictRequest(ownerId, id, text),
-            CancellationToken.None));
+        return Ok(_messagePredictService.Predict(new MessagePredictRequest(ownerId, id, text)));
     }
 
     [HttpPut]

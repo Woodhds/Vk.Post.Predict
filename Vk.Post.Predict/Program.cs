@@ -1,25 +1,22 @@
-using Microsoft.AspNetCore.Builder;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 using Vk.Post.Predict.Extensions;
 
-namespace Vk.Post.Predict
-{
-    public class Program
-    {
-        public static void Main(string[] args)
-        {
-            CreateHostBuilder(args)
-                .Build()
-                .MigrateDatabase()
-                .Run();
-        }
+namespace Vk.Post.Predict;
 
-        public static IHostBuilder CreateHostBuilder(string[] args) =>
-            Host.CreateDefaultBuilder(args)
-                .ConfigureWebHostDefaults(webBuilder =>
-                {
-                    webBuilder.UseStartup<Startup>();
-                });
+class Program
+{
+    public static async Task Main(string[] args)
+    {
+        var host = Host.CreateDefaultBuilder(args)
+            .ConfigureWebHostDefaults(webBuilder =>
+            {
+                webBuilder.UseStartup<Startup>();
+            })
+            .Build();
+
+        await host.MigrateDatabase();
+        await host.RunAsync();
     }
 }

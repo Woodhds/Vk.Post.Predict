@@ -1,8 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.ML;
+using Microsoft.ML.Data;
 using Vk.Post.Predict.Entities;
 using Vk.Post.Predict.Models;
 
@@ -11,10 +14,19 @@ namespace Vk.Post.Predict.Services;
 public interface IMessagePredictService
 {
     Task<MessagePredictResponse> Predict(MessagePredictRequest[] request, CancellationToken ct);
+    Task<IReadOnlyDictionary<string, decimal>> Predict(MessagePredictRequest request, CancellationToken ct);
 }
 
 public class MessagePredictService : IMessagePredictService
 {
+    private static string[] Categories = new[]
+    {
+        "Деньги", "Еда", "Косметика", "Одежда", "Домашняя техника", "Эл. техника", "Кондитерские изд.", "Для детей",
+        "Мебель", "Сертификаты", "Белье", "Для авто", "Билеты", "Ювелирка", "Посуда", "Для животных",
+        "Не конкурс", "Книги", "Досуг", "Спорт", "Комп. игры", "Бытовая химия", "Медицина", "Разное",
+        "Инструменты и ремонт", "Канцтовары"
+    };
+    
     private readonly PredictionEnginePool<VkMessageML, VkMessagePredict> _predictionEnginePool;
     private readonly IMessageService _messageService;
 
@@ -46,5 +58,22 @@ public class MessagePredictService : IMessagePredictService
                         : category, category != default);
                 }).ToArray()
         };
+    }
+
+    public async Task<IReadOnlyDictionary<string, decimal>> Predict(MessagePredictRequest request, CancellationToken ct)
+    {
+        var response = _predictionEnginePool.Predict(new VkMessageML
+        {
+            Id = request.Id, OwnerId = request.OwnerId, Text = request.Text
+        });
+
+        var top10scores = Categories.ToDictionary(
+                l => l,
+                l => (decimal)response.Score[Array.IndexOf(Categories, l)]
+            )
+            .OrderByDescending(kv => kv.Value)
+            .Take(10);
+
+        return top10scores.ToDictionary(x => x.Key, x => x.Value);
     }
 }

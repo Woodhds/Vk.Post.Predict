@@ -1,8 +1,10 @@
-﻿namespace Vk.Post.Predict;
+﻿using System.Threading.Tasks;
+
+namespace Vk.Post.Predict;
 
 public interface IMigrateDatabase
 {
-    void Migrate();
+    Task MigrateAsync();
 }
 
 public class MigrateDatabase : IMigrateDatabase
@@ -14,11 +16,11 @@ public class MigrateDatabase : IMigrateDatabase
         _connectionFactory = connectionFactory;
     }
 
-    public void Migrate()
+    public async Task MigrateAsync()
     {
-        using var connection = _connectionFactory.GetConnection();
-        connection.Open();
-        using var command = connection.CreateCommand();
+        await using var connection = _connectionFactory.GetConnection();
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
         command.CommandText = @"
                 CREATE TABLE IF NOT EXISTS ""Messages"" (
                     ""Id"" integer,
@@ -29,6 +31,6 @@ public class MigrateDatabase : IMigrateDatabase
                 );
                 create unique index if not exists ""IX_Messages_Id_OwnerId"" on ""Messages""(""OwnerId"", ""Id"")
             ";
-        command.ExecuteNonQuery();
+        await command.ExecuteNonQueryAsync();
     }
 }

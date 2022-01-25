@@ -17,7 +17,7 @@ public class PredictController : ControllerBase
 
     public PredictController(
         IConnectionFactory connectionFactory,
-        IMessageService messageProvider, 
+        IMessageService messageProvider,
         IMessagePredictService messagePredictService)
     {
         _connectionFactory = connectionFactory;
@@ -26,9 +26,16 @@ public class PredictController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> Predict([FromBody]MessagePredictRequest[] request, CancellationToken ct = default)
+    public async Task<IActionResult> Predict([FromBody] MessagePredictRequest[] request, CancellationToken ct = default)
     {
         return Ok(await _messagePredictService.Predict(request, ct));
+    }
+
+    [HttpPost("{ownerId:int}/{id:int}")]
+    public async Task<IActionResult> Predict(int ownerId, int id, [FromBody] string text)
+    {
+        return Ok(await _messagePredictService.Predict(new MessagePredictRequest(ownerId, id, text),
+            CancellationToken.None));
     }
 
     [HttpPut]

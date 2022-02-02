@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.ML;
+using Microsoft.ML.Data;
 using Vk.Post.Predict.Entities;
 using Vk.Post.Predict.Models;
 
@@ -17,14 +18,6 @@ public interface IMessagePredictService
 
 public class MessagePredictService : IMessagePredictService
 {
-    private static string[] Categories = new[]
-    {
-        "Деньги", "Еда", "Косметика", "Одежда", "Домашняя техника", "Эл. техника", "Кондитерские изд.", "Для детей",
-        "Мебель", "Сертификаты", "Белье", "Для авто", "Билеты", "Ювелирка", "Посуда", "Для животных",
-        "Не конкурс", "Книги", "Досуг", "Спорт", "Комп. игры", "Бытовая химия", "Медицина", "Разное",
-        "Инструменты и ремонт", "Канцтовары"
-    };
-    
     private readonly PredictionEnginePool<VkMessageML, VkMessagePredict> _predictionEnginePool;
     private readonly IMessageService _messageService;
 
@@ -66,14 +59,20 @@ public class MessagePredictService : IMessagePredictService
             OwnerId = request.OwnerId, 
             Text = request.Text
         });
+        var categories = InitCategories();
 
-        var top10Scores = Categories.ToDictionary(
-                l => l,
-                l => response.Score[Array.IndexOf(Categories, l)]
-            )
-            .OrderByDescending(kv => kv.Value)
-            .Take(10);
+        var top10Scores = categories.Zip(response.Score)
+            .OrderByDescending(f => f.Second)
+            .Take(10)
+            .ToDictionary(x => x.First, x => x.Second);
 
-        return top10Scores.ToDictionary(x => x.Key, x => x.Value);
+        return top10Scores;
+    }
+
+    private string[] InitCategories()
+    {
+        var labelBuffer = new VBuffer<ReadOnlyMemory<char>>();
+        _predictionEnginePool.GetPredictionEngine().OutputSchema["Score"].Annotations.GetValue("SlotNames", ref labelBuffer);
+        return labelBuffer.DenseValues().Select(l => l.ToString()).ToArray();
     }
 }

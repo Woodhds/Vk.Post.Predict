@@ -20,12 +20,14 @@ public class MessagePredictService : IMessagePredictService
 {
     private readonly PredictionEnginePool<VkMessageML, VkMessagePredict> _predictionEnginePool;
     private readonly IMessageService _messageService;
+    private IReadOnlyCollection<string> _categories;
 
     public MessagePredictService(PredictionEnginePool<VkMessageML, VkMessagePredict> predictionEnginePool,
         IMessageService messageService)
     {
         _predictionEnginePool = predictionEnginePool;
         _messageService = messageService;
+        InitCategories();
     }
 
     public async Task<MessagePredictResponse> Predict(MessagePredictRequest[] request, CancellationToken ct)
@@ -42,37 +44,44 @@ public class MessagePredictService : IMessagePredictService
                 (e, y) =>
                 {
                     var category = y.Select(f => f.Category).FirstOrDefault();
-                    return new MessagePredictResponseItem(e.OwnerId, e.Id, string.IsNullOrEmpty(category)
-                        ? _predictionEnginePool
-                            .Predict(new VkMessageML {Text = e.Text, OwnerId = e.OwnerId, Id = e.Id})
-                            ?.Category
-                        : category, category != default);
+
+                    if (!string.IsNullOrEmpty(category))
+                    {
+                        return new MessagePredictResponseItem(e.OwnerId, e.Id, category, true);
+                    }
+
+                    var predictResult = PredictInternal(e);
+
+                    return new MessagePredictResponseItem(e.OwnerId, e.Id, predictResult.Category, false, predictResult.Scores);
                 }).ToArray()
         };
     }
 
     public IReadOnlyDictionary<string, float> Predict(MessagePredictRequest request)
     {
+        return PredictInternal(request).Scores;
+    }
+
+    private (string Category, IReadOnlyDictionary<string, float> Scores) PredictInternal(MessagePredictRequest request)
+    {
         var response = _predictionEnginePool.Predict(new VkMessageML
         {
-            Id = request.Id, 
-            OwnerId = request.OwnerId, 
-            Text = request.Text
+            Id = request.Id, OwnerId = request.OwnerId, Text = request.Text
         });
-        var categories = InitCategories();
 
-        var top10Scores = categories.Zip(response.Score)
+        var top10Scores = _categories.Zip(response.Score)
             .OrderByDescending(f => f.Second)
             .Take(10)
             .ToDictionary(x => x.First, x => x.Second);
 
-        return top10Scores;
+        return (response.Category, top10Scores);
     }
 
-    private string[] InitCategories()
+    private void InitCategories()
     {
         var labelBuffer = new VBuffer<ReadOnlyMemory<char>>();
-        _predictionEnginePool.GetPredictionEngine().OutputSchema["Score"].Annotations.GetValue("SlotNames", ref labelBuffer);
-        return labelBuffer.DenseValues().Select(l => l.ToString()).ToArray();
+        _predictionEnginePool.GetPredictionEngine().OutputSchema["Score"].Annotations
+            .GetValue("SlotNames", ref labelBuffer);
+        _categories = labelBuffer.DenseValues().Select(l => l.ToString()).ToArray();
     }
 }

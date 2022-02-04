@@ -32,12 +32,10 @@ public class PredictController : ControllerBase
     }
 
     [HttpPost("{ownerId:int}/{id:int}")]
-    public IActionResult Predict(int ownerId, int id, OneMessagePredict message)
+    public IActionResult Predict(int ownerId, int id, [FromBody]MessagePredictRequest message)
     {
-        if (string.IsNullOrWhiteSpace(message?.text))
-            return BadRequest("String empty");
-        
-        return Ok(_messagePredictService.Predict(new MessagePredictRequest(ownerId, id, message.text)));
+
+        return Ok(_messagePredictService.Predict(new MessagePredictRequest(ownerId, id, message.Text)));
     }
 
     [HttpPut]

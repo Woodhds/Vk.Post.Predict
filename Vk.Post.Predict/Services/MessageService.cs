@@ -1,9 +1,11 @@
 ﻿using System.Collections.Generic;
+using System.Data.Common;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Npgsql;
 using Vk.Post.Predict.Entities;
+using Vk.Post.Predict.Persistence.Abstractions;
 
 namespace Vk.Post.Predict.Services;
 
@@ -51,7 +53,7 @@ public class MessageService : IMessageService
     }
 
     public async Task<IReadOnlyCollection<(int OwnerId, int Id, string Category)>> GetMessages(
-        IReadOnlyCollection<MessageId> messageIds, 
+        IReadOnlyCollection<MessageId> messageIds,
         CancellationToken ct)
     {
         var ids = messageIds.Select(f => f.ToString()).ToArray();
@@ -61,7 +63,7 @@ public class MessageService : IMessageService
             @"select ""OwnerId"", ""Id"", ""Category"" from 
                         (select concat(""OwnerId"", '_', ""Id"") as k, ""OwnerId"", ""Id"", ""Category"" from ""Messages"") sub
                         where k = any(@keys)";
-        command.Parameters.AddWithValue("keys", ids);
+        command.Parameters.Add(new NpgsqlParameter("keys", ids));
         await connection.OpenAsync(ct);
         await command.PrepareAsync(ct);
         await using var reader = await command.ExecuteReaderAsync(ct);
@@ -83,7 +85,8 @@ public class MessageService : IMessageService
             @"select exists(select 1 from ""Messages"" where ""Id"" = @id and ""OwnerId"" = @owner)";
         command.Parameters.AddRange(new[]
         {
-            new NpgsqlParameter("id", message.Id), new NpgsqlParameter("owner", message.OwnerId)
+            new NpgsqlParameter("id", message.Id), 
+            new NpgsqlParameter("owner", message.OwnerId)
         });
         await connection.OpenAsync();
         await command.PrepareAsync();
@@ -93,10 +96,11 @@ public class MessageService : IMessageService
             command.CommandText =
                 @"insert into ""Messages"" (""Id"", ""OwnerId"", ""Text"", ""Category"", ""OwnerName"") 
                         values (@id, @owner, @text, @category, @ownerName)";
-
+            
             command.Parameters.AddRange(new[]
                 {
-                    new NpgsqlParameter("text", message.Text), new NpgsqlParameter("category", message.Category),
+                    new NpgsqlParameter("text", message.Text), 
+                    new NpgsqlParameter("category", message.Category),
                     new NpgsqlParameter("ownerName", message.OwnerName),
                 }
             );
@@ -105,7 +109,10 @@ public class MessageService : IMessageService
         {
             command.CommandText =
                 @"update ""Messages"" set ""Category"" = @category where ""Id"" = @id and ""OwnerId"" = @owner";
-            command.Parameters.AddWithValue("category", message.Category);
+            var parameter = command.CreateParameter();
+            parameter.ParameterName = "category";
+            parameter.Value = message.Category;
+            command.Parameters.Add(parameter);
         }
 
         await command.ExecuteNonQueryAsync();

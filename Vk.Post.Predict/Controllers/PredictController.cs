@@ -2,8 +2,9 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Vk.Post.Predict.Entities;
-using Vk.Post.Predict.Models;
+using Vk.Post.Predict.Persistence.Abstractions;
 using Vk.Post.Predict.Services;
+using Vk.Post.Predict.Services.Abstractions;
 
 namespace Vk.Post.Predict.Controllers;
 

@@ -23,4 +23,24 @@ public readonly struct MessageId : IEquatable<MessageId>
     {
         return $"{OwnerId}_{Id}";
     }
+
+    public override bool Equals(object obj)
+    {
+        return obj is MessageId id && Equals(id);
+    }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(Id, OwnerId);
+    }
+
+    public static bool operator ==(MessageId left, MessageId right)
+    {
+        return left.Equals(right);
+    }
+
+    public static bool operator !=(MessageId left, MessageId right)
+    {
+        return !(left == right);
+    }
 }

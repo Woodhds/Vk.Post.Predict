@@ -1,11 +1,7 @@
 ﻿using System.Threading.Tasks;
+using Vk.Post.Predict.Persistence.Abstractions;
 
-namespace Vk.Post.Predict;
-
-public interface IMigrateDatabase
-{
-    Task MigrateAsync();
-}
+namespace Vk.Post.Predict.Persistence.Pgsql;
 
 public class MigrateDatabase : IMigrateDatabase
 {

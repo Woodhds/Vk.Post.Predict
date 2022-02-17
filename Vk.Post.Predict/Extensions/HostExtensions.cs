@@ -1,6 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Vk.Post.Predict.Persistence.Abstractions;
 
 namespace Vk.Post.Predict.Extensions;
 

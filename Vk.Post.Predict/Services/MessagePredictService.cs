@@ -7,14 +7,9 @@ using Microsoft.Extensions.ML;
 using Microsoft.ML.Data;
 using Vk.Post.Predict.Entities;
 using Vk.Post.Predict.Models;
+using Vk.Post.Predict.Services.Abstractions;
 
 namespace Vk.Post.Predict.Services;
-
-public interface IMessagePredictService
-{
-    Task<MessagePredictResponse> Predict(MessagePredictRequest[] request, CancellationToken ct);
-    IReadOnlyDictionary<string, float> Predict(MessagePredictRequest request);
-}
 
 public class MessagePredictService : IMessagePredictService
 {
@@ -30,7 +25,7 @@ public class MessagePredictService : IMessagePredictService
         InitCategories();
     }
 
-    public async Task<MessagePredictResponse> Predict(MessagePredictRequest[] request, CancellationToken ct)
+    public async Task<MessagePredictResponse> Predict(IReadOnlyCollection<MessagePredictRequest> request, CancellationToken ct)
     {
         var messages =
             await _messageService.GetMessages(
@@ -64,9 +59,11 @@ public class MessagePredictService : IMessagePredictService
 
     private (string Category, IReadOnlyDictionary<string, float> Scores) PredictInternal(MessagePredictRequest request)
     {
-        var response = _predictionEnginePool.Predict(new VkMessageML
+        var response = _predictionEnginePool.Predict(new()
         {
-            Id = request.Id, OwnerId = request.OwnerId, Text = request.Text
+            Id = request.Id, 
+            OwnerId = request.OwnerId, 
+            Text = request.Text
         });
 
         var top10Scores = _categories.Zip(response.Score)

@@ -6,24 +6,22 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.ML;
 using Vk.Post.Predict.Models;
+using Vk.Post.Predict.Persistence.Pgsql;
 using Vk.Post.Predict.Services;
+using Vk.Post.Predict.Services.Abstractions;
 
 namespace Vk.Post.Predict
 {
     public class Startup
     {
+        private IConfiguration Configuration { get; }
+
         public Startup(IConfiguration configuration)
-        {
-            Configuration = configuration;
-        }
+            => Configuration = configuration;
 
-        public IConfiguration Configuration { get; }
-
-        // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
-            services.AddScoped<IMigrateDatabase, MigrateDatabase>();
             services.AddScoped<IMessageService, MessageService>();
             services.AddPredictionEnginePool<VkMessageML, VkMessagePredict>()
                 .FromUri("https://github.com/Woodhds/Vk.Post.Model/raw/master/Model.zip", TimeSpan.FromDays(1));
@@ -31,11 +29,9 @@ namespace Vk.Post.Predict
             var connUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
             // Parse connection URL to connection string for Npgsql
 
-
-            services.AddSingleton<IConnectionFactory, ConnectionFactory>(
-                x => new ConnectionFactory(string.IsNullOrEmpty(connUrl)
-                    ? Configuration.GetConnectionString("DataContext")
-                    : GetConnectionString(connUrl)));
+            services.AddPostgres(string.IsNullOrEmpty(connUrl)
+                ? Configuration.GetConnectionString("DataContext")
+                : GetConnectionString(connUrl));
 
             services.AddScoped<IMessagePredictService, MessagePredictService>();
         }

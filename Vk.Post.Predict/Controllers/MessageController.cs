@@ -8,7 +8,7 @@ using Vk.Post.Predict.Services;
 namespace Vk.Post.Predict.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("message")]
 public class MessageController : ControllerBase
 {
     private readonly IMessageService _messageService;

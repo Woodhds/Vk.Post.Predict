@@ -9,7 +9,7 @@ using Vk.Post.Predict.Services.Abstractions;
 namespace Vk.Post.Predict.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("predict")]
 public class PredictController : ControllerBase
 {
     private readonly IConnectionFactory _connectionFactory;
@@ -30,13 +30,6 @@ public class PredictController : ControllerBase
     public async Task<IActionResult> Predict([FromBody] MessagePredictRequest[] request, CancellationToken ct = default)
     {
         return Ok(await _messagePredictService.Predict(request, ct));
-    }
-
-    [HttpPost("{ownerId:int}/{id:int}")]
-    public IActionResult Predict(int ownerId, int id, [FromBody]MessagePredictRequest message)
-    {
-
-        return Ok(_messagePredictService.Predict(new MessagePredictRequest(ownerId, id, message.Text)));
     }
 
     [HttpPut]

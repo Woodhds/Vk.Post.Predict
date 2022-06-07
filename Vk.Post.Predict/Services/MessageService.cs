@@ -64,9 +64,10 @@ public class MessageService : IMessageService
                         (select concat(""OwnerId"", '_', ""Id"") as k, ""OwnerId"", ""Id"", ""Category"" from ""Messages"") sub
                         where k = any(@keys)";
         command.Parameters.Add(new NpgsqlParameter("keys", ids));
+        
         await connection.OpenAsync(ct);
-        await command.PrepareAsync(ct);
         await using var reader = await command.ExecuteReaderAsync(ct);
+        
         var messages = new List<(int OwnerId, int Id, string Category)>(messageIds.Count);
         while (await reader.ReadAsync(ct))
         {
@@ -89,7 +90,6 @@ public class MessageService : IMessageService
             new NpgsqlParameter("owner", message.OwnerId)
         });
         await connection.OpenAsync();
-        await command.PrepareAsync();
 
         if (!(bool)await command.ExecuteScalarAsync())
         {

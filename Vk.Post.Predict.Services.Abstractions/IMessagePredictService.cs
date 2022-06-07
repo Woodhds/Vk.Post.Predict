@@ -8,5 +8,4 @@ namespace Vk.Post.Predict.Services.Abstractions;
 public interface IMessagePredictService
 {
     Task<MessagePredictResponse> Predict(IReadOnlyCollection<MessagePredictRequest> request, CancellationToken ct);
-    IReadOnlyDictionary<string, float> Predict(MessagePredictRequest request);
 }

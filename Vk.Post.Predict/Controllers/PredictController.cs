@@ -1,9 +1,9 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Vk.Post.Predict.Abstractions;
 using Vk.Post.Predict.Entities;
 using Vk.Post.Predict.Persistence.Abstractions;
-using Vk.Post.Predict.Services;
 using Vk.Post.Predict.Services.Abstractions;
 
 namespace Vk.Post.Predict.Controllers;
@@ -35,7 +35,7 @@ public class PredictController : ControllerBase
     [HttpPut]
     public async Task<IActionResult> Create([FromBody] Message message)
     {
-        await _messageService.Create(message);
+        await _messageService.CreateOrUpdate(message);
         return Ok();
     }
 

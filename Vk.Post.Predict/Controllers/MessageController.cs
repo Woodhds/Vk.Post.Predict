@@ -3,7 +3,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Vk.Post.Predict.Services;
+using Vk.Post.Predict.Abstractions;
 
 namespace Vk.Post.Predict.Controllers;
 

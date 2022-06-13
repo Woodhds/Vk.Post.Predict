@@ -1,23 +1,13 @@
 ﻿using System.Collections.Generic;
-using System.Data.Common;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Npgsql;
+using Vk.Post.Predict.Abstractions;
 using Vk.Post.Predict.Entities;
 using Vk.Post.Predict.Persistence.Abstractions;
 
 namespace Vk.Post.Predict.Services;
-
-public interface IMessageService
-{
-    Task<IReadOnlyCollection<Message>> GetMessages();
-
-    Task<IReadOnlyCollection<(int OwnerId, int Id, string Category)>> GetMessages(
-        IReadOnlyCollection<MessageId> messageIds, CancellationToken ct);
-
-    Task Create(Message message);
-}
 
 public class MessageService : IMessageService
 {
@@ -62,12 +52,12 @@ public class MessageService : IMessageService
         command.CommandText =
             @"select ""OwnerId"", ""Id"", ""Category"" from 
                         (select concat(""OwnerId"", '_', ""Id"") as k, ""OwnerId"", ""Id"", ""Category"" from ""Messages"") sub
-                        where k = any(@keys)";
-        command.Parameters.Add(new NpgsqlParameter("keys", ids));
-        
+                        where k = any($1)";
+        command.Parameters.Add(new NpgsqlParameter { Value = ids });
+
         await connection.OpenAsync(ct);
         await using var reader = await command.ExecuteReaderAsync(ct);
-        
+
         var messages = new List<(int OwnerId, int Id, string Category)>(messageIds.Count);
         while (await reader.ReadAsync(ct))
         {
@@ -78,43 +68,24 @@ public class MessageService : IMessageService
         return messages;
     }
 
-    public async Task Create(Message message)
+    public async Task CreateOrUpdate(Message message)
     {
         await using var connection = _connectionFactory.GetConnection();
         await using var command = connection.CreateCommand();
-        command.CommandText =
-            @"select exists(select 1 from ""Messages"" where ""Id"" = @id and ""OwnerId"" = @owner)";
+        command.CommandText = @"
+                insert into ""Messages"" (""Id"", ""OwnerId"", ""Text"", ""Category"", ""OwnerName"") 
+                        values ($1, $2, $3, $4, $5)
+                        on conflict (""Id"", ""OwnerId"") do update set ""Category"" = excluded.""Category""";
         command.Parameters.AddRange(new[]
         {
-            new NpgsqlParameter("id", message.Id), 
-            new NpgsqlParameter("owner", message.OwnerId)
+            new NpgsqlParameter<int> { Value = message.Id }, 
+            new NpgsqlParameter<int> { Value = message.OwnerId },
+            new NpgsqlParameter { Value = message.Text }, 
+            new NpgsqlParameter { Value = message.Category },
+            new NpgsqlParameter { Value = message.OwnerName },
         });
+
         await connection.OpenAsync();
-
-        if (!(bool)await command.ExecuteScalarAsync())
-        {
-            command.CommandText =
-                @"insert into ""Messages"" (""Id"", ""OwnerId"", ""Text"", ""Category"", ""OwnerName"") 
-                        values (@id, @owner, @text, @category, @ownerName)";
-            
-            command.Parameters.AddRange(new[]
-                {
-                    new NpgsqlParameter("text", message.Text), 
-                    new NpgsqlParameter("category", message.Category),
-                    new NpgsqlParameter("ownerName", message.OwnerName),
-                }
-            );
-        }
-        else
-        {
-            command.CommandText =
-                @"update ""Messages"" set ""Category"" = @category where ""Id"" = @id and ""OwnerId"" = @owner";
-            var parameter = command.CreateParameter();
-            parameter.ParameterName = "category";
-            parameter.Value = message.Category;
-            command.Parameters.Add(parameter);
-        }
-
         await command.ExecuteNonQueryAsync();
     }
 }

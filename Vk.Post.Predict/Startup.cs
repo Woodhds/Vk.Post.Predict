@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.ML;
+using Vk.Post.Predict.Abstractions;
 using Vk.Post.Predict.Models;
 using Vk.Post.Predict.Persistence.Pgsql;
 using Vk.Post.Predict.Services;

@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.ML;
 using Microsoft.ML.Data;
+using Vk.Post.Predict.Abstractions;
 using Vk.Post.Predict.Entities;
 using Vk.Post.Predict.Models;
 using Vk.Post.Predict.Services.Abstractions;

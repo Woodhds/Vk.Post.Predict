@@ -6,6 +6,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Google.Api.CommonProtos" Version="2.6.0" />
+    <PackageReference Include="Grpc.Tools" Version="2.47">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.AspNetCore.Grpc.JsonTranscoding" Version="7.0.0-preview.6.22330.3" />
     <PackageReference Include="Microsoft.Extensions.ML" Version="1.7.1" />
     <PackageReference Include="Microsoft.ML" Version="2.0.0-preview.22310.1" />
   </ItemGroup>
@@ -14,5 +20,9 @@
     <ProjectReference Include="..\Vk.Post.Predict.Persistence.Abstractions\Vk.Post.Predict.Persistence.Abstractions.csproj" />
     <ProjectReference Include="..\Vk.Post.Predict.Persistence.Pgsql\Vk.Post.Predict.Persistence.Pgsql.csproj" />
     <ProjectReference Include="..\Vk.Post.Predict.Services.Abstractions\Vk.Post.Predict.Services.Abstractions.csproj" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Protobuf Include="../proto/predict.proto" ProtoRoot="../proto" GrpcServices="Server" />
   </ItemGroup>
 </Project>

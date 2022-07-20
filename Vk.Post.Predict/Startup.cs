@@ -34,7 +34,7 @@ namespace Vk.Post.Predict
                 ? Configuration.GetConnectionString("DataContext")
                 : GetConnectionString(connUrl));
 
-            services.AddScoped<IMessagePredictService, MessagePredictService>();
+            services.AddGrpc().AddJsonTranscoding();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -50,6 +50,7 @@ namespace Vk.Post.Predict
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
+                endpoints.MapGrpcService<Services.MessagePredictService>();
             });
         }
 

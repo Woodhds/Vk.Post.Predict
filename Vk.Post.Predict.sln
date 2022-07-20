@@ -17,6 +17,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vk.Post.Predict.Persistence
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vk.Post.Predict.Services.Abstractions", "Vk.Post.Predict.Services.Abstractions\Vk.Post.Predict.Services.Abstractions.csproj", "{416AE750-AC3E-43C5-A61A-4AC41F77C649}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "proto", "proto", "{95CF44F7-6803-4634-AF60-7D8E7C934594}"
+	ProjectSection(SolutionItems) = preProject
+		proto\predict.proto = proto\predict.proto
+		proto\annotations.proto = proto\annotations.proto
+		proto\http.proto = proto\http.proto
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,5 +52,8 @@ Global
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {6AA83AD5-8620-4A41-9863-4057D1702F54}
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{95CF44F7-6803-4634-AF60-7D8E7C934594} = {715EE17A-78E4-43CB-854D-3BD02ECA1562}
 	EndGlobalSection
 EndGlobal

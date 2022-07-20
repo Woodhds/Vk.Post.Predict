@@ -1,18 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
+using Google.Protobuf.WellKnownTypes;
+using Grpc.Core;
 using Microsoft.Extensions.ML;
 using Microsoft.ML.Data;
 using Vk.Post.Predict.Abstractions;
 using Vk.Post.Predict.Entities;
 using Vk.Post.Predict.Models;
-using Vk.Post.Predict.Services.Abstractions;
 
 namespace Vk.Post.Predict.Services;
 
-public class MessagePredictService : IMessagePredictService
+public class MessagePredictService : global::MessagePredictService.MessagePredictServiceBase
 {
     private readonly PredictionEnginePool<VkMessageML, VkMessagePredict> _predictionEnginePool;
     private readonly IMessageService _messageService;
@@ -26,45 +26,69 @@ public class MessagePredictService : IMessagePredictService
         InitCategories();
     }
 
-    public async Task<MessagePredictResponse> Predict(IReadOnlyCollection<MessagePredictRequest> request, CancellationToken ct)
+    public override async Task<MessagePredictResponse> Predict(MessagePredictRequest request, ServerCallContext context)
     {
         var messages =
             await _messageService.GetMessages(
-                request.Select(f => new MessageId(f.Id, f.OwnerId)).ToArray(), ct);
+                request.Messages.Select(f => new MessageId(f.Id, f.OwnerId)).ToArray(), context.CancellationToken);
 
         return new MessagePredictResponse
         {
-            Messages = request.GroupJoin(messages,
-                a => new {a.Id, a.OwnerId},
-                a => new {a.Id, a.OwnerId},
-                (e, y) =>
-                {
-                    var category = y.Select(f => f.Category).FirstOrDefault();
-
-                    if (!string.IsNullOrEmpty(category))
+            Messages =
+            {
+                request.Messages.GroupJoin(messages,
+                    a => new {a.Id, a.OwnerId},
+                    a => new {a.Id, a.OwnerId},
+                    (e, y) =>
                     {
-                        return new MessagePredictResponseItem(e.OwnerId, e.Id, category, true);
-                    }
+                        var category = y.Select(f => f.Category).FirstOrDefault();
 
-                    var predictResult = PredictInternal(e);
+                        if (!string.IsNullOrEmpty(category))
+                        {
+                            return new MessagePredictResponse.Types.ResponseItem
+                            {
+                                OwnerId = e.OwnerId, 
+                                Id = e.Id, 
+                                Category = category, 
+                                IsAccept = true
+                            };
+                        }
 
-                    return new MessagePredictResponseItem(e.OwnerId, e.Id, predictResult.Category, false, predictResult.Scores);
-                }).ToArray()
+                        var predictResult = PredictInternal(e);
+
+                        return new MessagePredictResponse.Types.ResponseItem
+                        {
+                            OwnerId = e.OwnerId,
+                            Id = e.Id,
+                            Category = predictResult.Category,
+                            IsAccept = false,
+                            Scores = {predictResult.Scores}
+                        };
+                    }).ToArray()
+            }
         };
     }
 
-    public IReadOnlyDictionary<string, float> Predict(MessagePredictRequest request)
+    public override async Task<Empty> Save(MessageSaveRequest request, ServerCallContext context)
     {
-        return PredictInternal(request).Scores;
+        await _messageService.CreateOrUpdate(new Message
+        {
+            OwnerId = request.OwnerId,
+            Text = request.Text,
+            Category = request.Category,
+            OwnerName = request.OwnerName,
+            Id = request.Id
+        });
+
+        return new Empty();
     }
 
-    private (string Category, IReadOnlyDictionary<string, float> Scores) PredictInternal(MessagePredictRequest request)
+    private (string Category, IDictionary<string, float> Scores) PredictInternal(
+        MessagePredictRequest.Types.PredictRequest request)
     {
         var response = _predictionEnginePool.Predict(new()
         {
-            Id = request.Id, 
-            OwnerId = request.OwnerId, 
-            Text = request.Text
+            Id = request.Id, OwnerId = request.OwnerId, Text = request.Text
         });
 
         var top10Scores = _categories.Zip(response.Score)

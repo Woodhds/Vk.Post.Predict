@@ -20,8 +20,8 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "proto", "proto", "{95CF44F7-6803-4634-AF60-7D8E7C934594}"
 	ProjectSection(SolutionItems) = preProject
 		proto\predict.proto = proto\predict.proto
-		proto\annotations.proto = proto\annotations.proto
-		proto\http.proto = proto\http.proto
+		proto\google\api\annotations.proto = proto\google\api\annotations.proto
+		proto\google\api\http.proto = proto\google\api\http.proto
 	EndProjectSection
 EndProject
 Global

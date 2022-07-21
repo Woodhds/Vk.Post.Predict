@@ -1,10 +1,6 @@
-﻿using System.Threading;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Vk.Post.Predict.Abstractions;
-using Vk.Post.Predict.Entities;
 using Vk.Post.Predict.Persistence.Abstractions;
-using Vk.Post.Predict.Services.Abstractions;
 
 namespace Vk.Post.Predict.Controllers;
 
@@ -13,30 +9,10 @@ namespace Vk.Post.Predict.Controllers;
 public class PredictController : ControllerBase
 {
     private readonly IConnectionFactory _connectionFactory;
-    private readonly IMessageService _messageService;
-    private readonly IMessagePredictService _messagePredictService;
 
-    public PredictController(
-        IConnectionFactory connectionFactory,
-        IMessageService messageProvider,
-        IMessagePredictService messagePredictService)
+    public PredictController(IConnectionFactory connectionFactory)
     {
         _connectionFactory = connectionFactory;
-        _messageService = messageProvider;
-        _messagePredictService = messagePredictService;
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> Predict([FromBody] MessagePredictRequest[] request, CancellationToken ct = default)
-    {
-        return Ok(await _messagePredictService.Predict(request, ct));
-    }
-
-    [HttpPut]
-    public async Task<IActionResult> Create([FromBody] Message message)
-    {
-        await _messageService.CreateOrUpdate(message);
-        return Ok();
     }
 
     [HttpDelete]
